@@ -1,0 +1,54 @@
+name: Build Payloads
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;27.2.12479018"
+
+      - name: Configure NDK
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
+
+      - name: Build every target
+        working-directory: Root-My-Galaxy-Payloads
+        run: |
+          mkdir -p artifacts
+
+          for dir in src/targets/*; do
+            [ -d "$dir" ] || continue
+
+            TARGET=$(basename "$dir")
+
+            echo "========== $TARGET =========="
+
+            make clean || true
+            make TARGET="$TARGET"
+
+            mkdir -p artifacts/$TARGET
+
+            cp build/$TARGET/cve-2026-43499-app.so artifacts/$TARGET/ || true
+            cp build/$TARGET/cve-2026-43499-app.release.so artifacts/$TARGET/ || true
+            cp build/$TARGET/cve-2026-43499-root artifacts/$TARGET/ || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payloads
+          path: Root-My-Galaxy-Payloads/artifacts
