@@ -3,11 +3,12 @@ name: Build Payloads
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +27,13 @@ jobs:
         run: |
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
 
-      - name: Build every target
-        working-directory: Root-My-Galaxy-Payloads
+      - name: Show repository
+        run: |
+          pwd
+          ls -la
+          ls src/targets
+
+      - name: Build all targets
         run: |
           mkdir -p artifacts
 
@@ -36,19 +42,21 @@ jobs:
 
             TARGET=$(basename "$dir")
 
-            echo "========== $TARGET =========="
+            echo "========================="
+            echo "Building $TARGET"
+            echo "========================="
 
             make clean || true
             make TARGET="$TARGET"
 
             mkdir -p artifacts/$TARGET
 
-            cp build/$TARGET/cve-2026-43499-app.so artifacts/$TARGET/ || true
-            cp build/$TARGET/cve-2026-43499-app.release.so artifacts/$TARGET/ || true
-            cp build/$TARGET/cve-2026-43499-root artifacts/$TARGET/ || true
+            cp build/$TARGET/cve-2026-43499-app.so artifacts/$TARGET/ 2>/dev/null || true
+            cp build/$TARGET/cve-2026-43499-app.release.so artifacts/$TARGET/ 2>/dev/null || true
+            cp build/$TARGET/cve-2026-43499-root artifacts/$TARGET/ 2>/dev/null || true
           done
 
       - uses: actions/upload-artifact@v4
         with:
           name: payloads
-          path: Root-My-Galaxy-Payloads/artifacts
+          path: artifacts
